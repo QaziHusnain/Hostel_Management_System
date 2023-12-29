@@ -76,6 +76,10 @@ class Student:
                              font=("time new romens", 14, "bold"), command=self.search_command)
         home_button.place(x=190, y=520)
 
+        Reset_button = Button(self.root, text="Reset", bg="black", fg="gold", bd=2, width=12,
+                             font=("time new romens", 14, "bold"), command=self.reset_command)
+        Reset_button.place(x=100, y=570)
+
         # =========== frame for separation ==========
         sep_frame = Frame(self.root, bd=5, width=4, height=500, bg="black")
         sep_frame.place(x=360, y=60)
@@ -114,7 +118,7 @@ class Student:
         self.st_detail.heading("Contact", text="Contact")
         self.st_detail.heading("Address", text="Address")
         self.st_detail.heading("Class", text="Class")
-        self.st_detail.heading("Fee", text="Student")
+        self.st_detail.heading("Fee", text="Fee")
 
         self.st_detail["show"] = "headings"
 
@@ -291,8 +295,6 @@ class Student:
             selected_id  # Use the ID of the selected item for the WHERE clause
         )
 
-        print("Values before executing the query:", values)  # Print values for debugging
-
         cursor.execute(query, values)
         conn.commit()
         conn.close()
@@ -322,13 +324,17 @@ class Student:
             self.Student_value.set(selected_values[6])
 
     def clear_entry_fields(self):
-        self.id_value.set("")
+        self.id_value.set("0")
         self.name_value.set("")
         self.fname_value.set("")
         self.Contact_value.set("")
         self.Address_value.set("")
         self.Class_value.set("")
         self.Student_value.set("")
+    def reset_command(self):
+
+        self.view_command()
+        self.clear_entry_fields()
 if __name__ == "__main__":
     root = Tk()
     obj = Student(root)

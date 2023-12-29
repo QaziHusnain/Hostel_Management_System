@@ -73,8 +73,12 @@ class Staff:
         update_button.place(x=20, y=520)
 
         home_button = Button(self.root, text="search", bg="black", fg="gold", bd=2, width=12,
-                             font=("time new romens", 14, "bold"))
+                             font=("time new romens", 14, "bold"),command=self.search_command)
         home_button.place(x=190, y=520)
+
+        Reset_button = Button(self.root, text="Reset", bg="black", fg="gold", bd=2, width=12,
+                              font=("time new romens", 14, "bold"), command=self.reset_command)
+        Reset_button.place(x=100, y=570)
 
         # =========== frame for separation ==========
         sep_frame = Frame(self.root, bd=5, width=4, height=500, bg="black")
@@ -97,6 +101,7 @@ class Staff:
         self.st_detail = ttk.Treeview(Tree_frame, height=15, columns=(
             "StdID", "Name", "Father Name", "Address", "DOB", "Age", "Contact No"),
                                       xscrollcommand=scroll_x.set, yscrollcommand=scroll_y.set)
+        self.st_detail.bind("<<TreeviewSelect>>", self.on_treeview_select)
 
         scroll_x.config(command=self.st_detail.xview)
         scroll_y.config(command=self.st_detail.yview)
@@ -145,10 +150,12 @@ class Staff:
         values = (ID, Name, Father, Address, DOB, Age, Contact)
         cursor.execute(query, values)
         messagebox.showinfo("Success", "Staff registered successful")
-        self.view_command()
+
         # Commit and close
         conn.commit()
         conn.close()
+        self.clear_entry_fields()
+        self.view_command()
 
     def view_command(self):
         conn = mysql.connector.connect(
@@ -195,9 +202,14 @@ class Staff:
         Contact = self.Contact_value.get()
 
         # Execute MySQL query for searching data
-        query = "SELECT * FROM Staff WHERE ID = %s OR Name = %s OR Father = %s OR Address = %s OR DOB = %s OR Age = %s OR Contact = %s"
-        values = (ID, Name, Father, Address, DOB, Age, Contact)
-        cursor.execute(query, values)
+        if any((ID, Name, Father, Contact, Address, DOB, Contact)):
+            query = "SELECT * FROM Staff WHERE ID = %s OR Name = %s OR Father = %s OR Address = %s OR DOB = %s OR Age = %s OR Contact = %s"
+            values = (ID, Name, Father, Address, DOB, Age, Contact)
+            cursor.execute(query, values)
+        else:
+            # Fetch all records if no search criteria is provided
+            query = "SELECT * FROM Staff"
+            cursor.execute(query)
 
         # Fetch all records
         rows = cursor.fetchall()
@@ -211,6 +223,7 @@ class Staff:
 
         # Close the connection
         conn.close()
+        self.clear_entry_fields()
 
     def delete_command(self):
         # Get the selected item from the treeview
@@ -239,6 +252,7 @@ class Staff:
         # Commit and close
         conn.commit()
         conn.close()
+        self.clear_entry_fields()
 
         # Refresh the treeview after deletion
         self.view_command()
@@ -250,25 +264,8 @@ class Staff:
         if not selected_item:
             messagebox.showinfo("Update", "Please select a record to update.")
             return
-
-        # Retrieve the values of the selected item
-        selected_values = self.st_detail.item(selected_item, "values")
-
-        # Populate entry fields with selected values
-        self.id_value.set(selected_values[0])
-        self.name_value.set(selected_values[1])
-        self.fname_value.set(selected_values[2])
-        self.address_value.set(selected_values[3])
-        self.dob_value.set(selected_values[4])
-        self.age_value.set(selected_values[5])
-        self.Contact_value.set(selected_values[6])
-        ID = self.id_value.get()
-        Name = self.name_value.get()
-        Father = self.fname_value.get()
-        Address = self.address_value.get()
-        DOB = self.dob_value.get()
-        Age = self.age_value.get()
-        Contact = self.Contact_value.get()
+            # Get the ID of the selected item
+        selected_id = self.st_detail.item(selected_item, "values")[0]
 
         # Update the record in the database
         conn = mysql.connector.connect(
@@ -285,11 +282,10 @@ class Staff:
                   self.dob_value.get(), self.age_value.get(), self.Contact_value.get(), self.id_value.get())
 
         cursor.execute(query, values)
-        messagebox.showinfo("Congrats", "Record Updated.")
         # Commit and close
         conn.commit()
         conn.close()
-
+        messagebox.showinfo("Congrats", "Record Updated.")
         # Refresh the treeview after updating
         self.view_command()
 
@@ -298,13 +294,34 @@ class Staff:
 
     def clear_entry_fields(self):
         # Clear entry fields
-        self.id_value.set("")
+        self.id_value.set("0")
         self.name_value.set("")
         self.fname_value.set("")
         self.address_value.set("")
         self.dob_value.set("")
         self.age_value.set("")
         self.Contact_value.set("")
+
+    def on_treeview_select(self, event):
+        # Get the selected item from the Treeview
+        selected_item = self.st_detail.selection()
+
+        if selected_item:
+            # Get the values of the selected item
+            selected_values = self.st_detail.item(selected_item, "values")
+
+            # Update the entry fields with the selected values
+            self.id_value.set(selected_values[0])
+            self.name_value.set(selected_values[1])
+            self.fname_value.set(selected_values[2])
+            self.address_value.set(selected_values[3])
+            self.dob_value.set(selected_values[4])
+            self.age_value.set(selected_values[5])
+            self.Contact_value.set(selected_values[6])
+    def reset_command(self):
+
+        self.view_command()
+        self.clear_entry_fields()
 
 
 if __name__ == "__main__":
