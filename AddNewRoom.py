@@ -28,17 +28,29 @@ class Fee:
             x=20, y=120)
         id_entry = Entry(self.root, width=30, textvariable=self.No_value).place(x=160, y=125)
 
+        # Create a StringVar for the dropdown
         self.Status_value = StringVar()
-        label_name = Label(self.root, text="Active/De-Active", font=("Time New Romen", 12, "bold"), bg="cadet blue",
+
+        # Label for "Active/Deactive"
+        label_name = Label(self.root, text="Active/De-active", font=("Time New Romen", 12, "bold"), bg="cadet blue",
                            fg="white").place(x=20, y=170)
-        name_entry = Entry(self.root, width=30, textvariable=self.Status_value).place(x=160, y=175)
+
+        # Combobox (Dropdown) for "Active/Deactive"
+        status_combobox = ttk.Combobox(self.root, textvariable=self.Status_value, values=["", "Active", "Deactive"])
+        status_combobox.place(x=160, y=175)
+        status_combobox.set("")  # Set the default value
 
         self.Type_value = StringVar()
+
+        # Label for "Room Type"
         label_fname = Label(self.root, text="Room Type", font=("Time New Romen", 12, "bold"), bg="cadet blue",
                             fg="white").place(x=20, y=220)
-        fname_entry = Entry(self.root, width=30, textvariable=self.Type_value).place(x=160, y=225)
 
-
+        # Combobox (Dropdown) for "Room Type"
+        type_combobox = ttk.Combobox(self.root, textvariable=self.Type_value,
+                                     values=["", "Single Seater", "Double Seater", "Three Seater"])
+        type_combobox.place(x=160, y=225)
+        type_combobox.set("")  # Set the default value
 
         # ===================creating buttons=====================
 
@@ -55,8 +67,12 @@ class Fee:
         update_button.place(x=20, y=520)
 
         home_button = Button(self.root, text="search", bg="black", fg="gold", bd=2, width=12,
-                             font=("time new romens", 14, "bold"))
+                             font=("time new romens", 14, "bold"),command=self.search_command)
         home_button.place(x=190, y=520)
+
+        Reset_button = Button(self.root, text="Reset", bg="black", fg="gold", bd=2, width=12,
+                              font=("time new romens", 14, "bold"), command=self.reset_command)
+        Reset_button.place(x=100, y=570)
 
         # =========== frame for separation ==========
         sep_frame = Frame(self.root, bd=5, width=4, height=500, bg="black")
@@ -79,6 +95,7 @@ class Fee:
         self.st_detail = ttk.Treeview(Tree_frame, height=15, columns=(
             "RoomNo", "Status", "Type"),
                                       xscrollcommand=scroll_x.set, yscrollcommand=scroll_y.set)
+        self.st_detail.bind("<<TreeviewSelect>>", self.on_treeview_select)
 
         scroll_x.config(command=self.st_detail.xview)
         scroll_y.config(command=self.st_detail.yview)
@@ -117,10 +134,11 @@ class Fee:
         values = (No, Status, Type)
         cursor.execute(query, values)
         messagebox.showinfo("Success", "Room Recorded successful")
-        self.view_command()
+
         # Commit and close
         conn.commit()
         conn.close()
+        self.view_command()
 
     def view_command(self):
         conn = mysql.connector.connect(
@@ -218,15 +236,8 @@ class Fee:
         if not selected_item:
             messagebox.showinfo("Update", "Please select a record to update.")
             return
-
-        # Retrieve the values of the selected item
-        selected_values = self.st_detail.item(selected_item, "values")
-
-        # Populate entry fields with selected values
-        self.No_value.set(selected_values[0])
-        self.Status_value.set(selected_values[1])
-        self.Type_value.set(selected_values[2])
-
+            # Get the ID of the selected item
+        selected_id = self.st_detail.item(selected_item, "values")[0]
 
         # Update the record in the database
         conn = mysql.connector.connect(
@@ -255,10 +266,25 @@ class Fee:
 
     def clear_entry_fields(self):
         # Clear entry fields
-        self.No_value.set("")
+        self.No_value.set("0")
         self.Status_value.set("")
         self.Type_value.set("")
+    def on_treeview_select(self, event):
+        # Get the selected item from the Treeview
+        selected_item = self.st_detail.selection()
 
+        if selected_item:
+            # Get the values of the selected item
+            selected_values = self.st_detail.item(selected_item, "values")
+
+            # Update the entry fields with the selected values
+            self.No_value.set(selected_values[0])
+            self.Status_value.set(selected_values[1])
+            self.Type_value.set(selected_values[2])
+    def reset_command(self):
+
+        self.view_command()
+        self.clear_entry_fields()
 
 
 if __name__ == "__main__":
