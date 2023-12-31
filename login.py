@@ -1,76 +1,79 @@
 from tkinter import *
-from tkinter import Tk
 from tkinter import messagebox
-import re
-from Home import Hostel_Management
 import mysql.connector
 
 
-# Function to execute a pymysql query
-
-
-
-def shift():
-    new_window = Toplevel(root) 
-    app = Hostel_Management(new_window)  
-
-
 def register_user():
-
     username = uservalue.get()
-    passward = passvalue.get()
+    password = passvalue.get()
     role = option.get()
 
-    connection = mysql.connector.connect(host='localhost',
-                                         user='root',
-                                         password='1234',
-                                         port='3306',
-                                         database='hostel')
+    if not (username and password and role):
+        messagebox.showerror("Error", "Please fill in all fields")
+        return
+
+    connection = mysql.connector.connect(
+        host='localhost',
+        user='root',
+        password='1234',
+        port='3306',
+        database='hostel'
+    )
     my_connection = connection.cursor()
 
-    if username == "" or passward == "" or role == "":
-        messagebox.showerror("Error", "Please fill in all fields")
-    else:
-        insert_query = "INSERT INTO users (username,passward,Role) VALUES (%s, %s,%s)"
-        data = (username, passward, role)
-
+    try:
+        insert_query = "INSERT INTO users (username, password, Role) VALUES (%s, %s, %s)"
+        data = (username, password, role)
         my_connection.execute(insert_query, data)
-
         connection.commit()
         messagebox.showinfo("Congrats", "Registration successful")
-
-        # Close the cursor and connection
+    except Exception as e:
+        messagebox.showerror("Error", f"Registration failed: {str(e)}")
+    finally:
         my_connection.close()
         connection.close()
 
-#======================Validations========================================================================
-
-
-
-#====================Fetching data from database and change the state of buttons=============================
 def login_user():
     username = uservalue.get()
-    passward = passvalue.get()
+    password = passvalue.get()
     role = option.get()
-    connection = mysql.connector.connect(host='localhost',
-                                         user='root',
-                                         password='1234',
-                                         port='3306',
-                                         database='hostel')
+
+    connection = mysql.connector.connect(
+        host='localhost',
+        user='root',
+        password='1234',
+        port='3306',
+        database='hostel'
+    )
     my_connection = connection.cursor()
-    my_connection.execute("SELECT * FROM users WHERE username=%s AND passward=%s AND Role=%s", (username, passward, role))
-    user = my_connection.fetchone()
-    if user == None:
-        messagebox.showinfo("Error", "Login failed")
-    else:
-        messagebox.showinfo("Success", "Login successful")
-        root.destroy()
-        import Home
+
+    try:
+        my_connection.execute("SELECT * FROM users WHERE username=%s AND password=%s AND Role=%s",
+                              (username, password, role))
+        user = my_connection.fetchone()
+
+        if user is None:
+            messagebox.showinfo("Error", "Login failed")
+        else:
+            # Import and create the Home window
+            import Home
+            home_window = Toplevel(root)
+            home_app = Home.Hostel_Management(home_window)
+            home_window.deiconify()  # Make the window visible
+
+            # Close the login window
+            root.withdraw()
+
+            messagebox.showinfo("Success", "Login successful")
+
+    except Exception as e:
+        messagebox.showerror("Error", f"Login failed: {str(e)}")
+    finally:
+        my_connection.close()
+        connection.close()
 
 
-
-
-root= Tk()
+root = Tk()
 root.geometry("800x500")
 root.title("Login")
 # ===================================================Creating frames===============================================
