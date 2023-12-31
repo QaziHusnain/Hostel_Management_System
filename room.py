@@ -4,6 +4,7 @@ from tkinter import ttk
 import tkinter as tk
 from tkinter import messagebox
 import mysql.connector
+from AddNewRoom import Fee
 
 
 class Room:
@@ -86,7 +87,7 @@ class Room:
             password="1234",
             database="hostel"
         )
-        cursor = conn.cursur()
+        cursor = conn.cursor()
 
         self.room_detail = ttk.Treeview(Tree_frame, height=15, columns=(
         "StdID", "Name", "Father Name", "Address", "DOB", "Age", "Contact No", "Room No", "Room Fee"),
@@ -119,7 +120,9 @@ class Room:
 
         self.room_detail.pack(fill = BOTH, expand=1)
     def open(self):
-        import AddNewRoom
+
+        addroom_window = Toplevel(self.root)
+        room_obj = Fee(addroom_window)
 
     def remove(self):
         connection = mysql.connector.connect(host='localhost',
