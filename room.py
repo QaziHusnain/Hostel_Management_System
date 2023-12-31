@@ -87,6 +87,9 @@ class Room:
         btn_insert_student = Button(self.root, text="Insert Student", command=self.insert_student, bg="black",
                                     fg="gold", bd=2, width=14, font=("time new romens", 14, "bold"))
         btn_insert_student.place(x=1100, y=48)
+        btn_clear = Button(self.root, text="Clear Entry", command=self.clear_entry, bg="black", fg="gold", bd=2,
+                           width=14, font=("time new romens", 14, "bold"))
+        btn_clear.place(x=100, y=510)
 
 
 # =============================frame for tree==========================
@@ -148,19 +151,49 @@ class Room:
                                              database='hostel')
         my_connection = connection.cursor()
         selected_item = self.room_detail.selection()
+
         if selected_item:
             record_id = self.room_detail.item(selected_item)['values'][0]
             print(f"Deleting record with ID: {record_id}")
-            query = "DELETE FROM Allocation WHERE id=%s"
-            my_connection.execute(query, (record_id,))
+
+            # Retrieve RoomNo before deleting the record
+            query_select_roomno = "SELECT RoomNo FROM Allocation WHERE id=%s"
+            my_connection.execute(query_select_roomno, (record_id,))
+            room_no = my_connection.fetchone()
+
+            query_delete = "DELETE FROM Allocation WHERE id=%s"
+            my_connection.execute(query_delete, (record_id,))
             connection.commit()
-            # refresh_data()
+
+            if room_no:
+                # Update the occupancy in the Rooms table
+                query_update_occupancy = "UPDATE Rooms SET Occupancy = Occupancy - 1 WHERE RoomNo = %s"
+                my_connection.execute(query_update_occupancy, room_no)
+                connection.commit()
+
+                # Check if occupancy becomes less than capacity
+                query_room_info = "SELECT Capacity, Occupancy FROM Rooms WHERE RoomNo = %s"
+                my_connection.execute(query_room_info, room_no)
+                room_info = my_connection.fetchone()
+
+                if room_info:
+                    capacity, occupancy = room_info
+
+                    if occupancy < capacity:
+                        # Update status to "Active" in the Rooms table
+                        update_status_query = "UPDATE Rooms SET Status = 'Active' WHERE RoomNo = %s"
+                        my_connection.execute(update_status_query, room_no)
+                        connection.commit()
+
+            self.fetch_data()
         else:
             messagebox.showinfo("Please", "select a record to delete")
-        self.fetch_data()
+
+        # Close the cursor and connection
+        my_connection.close()
+        connection.close()
 
     def add_room(self):
-
         id = self.id_value.get()
         name = self.name.get()
         fname = self.fname.get()
@@ -175,29 +208,58 @@ class Room:
         roomn = self.roomn.get()
         fee = self.fee.get()
 
-        connection = mysql.connector.connect(host='localhost',
-                                             user='root',
-                                             password='1234',
-                                             port='3306',
-                                             database='hostel')
+        connection = mysql.connector.connect(
+            host='localhost',
+            user='root',
+            password='1234',
+            port='3306',
+            database='hostel'
+        )
         my_connection = connection.cursor()
 
-        if roomn == "" or age == ""or contact == "" or name == "" or fname == "" or fee == "" or address == "" or DOB == "" or id == "":
+        if roomn == "" or age == "" or contact == "" or name == "" or fname == "" or fee == "" or address == "" or DOB == "" or id == "":
             messagebox.showerror("Error", "Please fill in all fields")
         else:
-            insert_query = "INSERT INTO Allocation (ID,Name, FName,Address,DOB,Age,Contact,RoomNo,Fee) VALUES (%s, %s,%s,%s, %s,%s,%s, %s,%s)"
-            data = (id, name,fname,address, DOB, age, contact, roomn, fee )
+            # Check if the room is available (occupancy is less than capacity)
+            query_room_info = "SELECT Capacity, Occupancy FROM Rooms WHERE RoomNo = %s"
+            my_connection.execute(query_room_info, (roomn,))
+            room_info = my_connection.fetchone()
 
-            my_connection.execute(insert_query, data)
+            if room_info:
+                capacity, occupancy = room_info
 
-            connection.commit()
-            messagebox.showinfo("Congrats", "Room Allocated")
+                if occupancy < capacity:
+                    # Update the Allocation table
+                    insert_query = "INSERT INTO Allocation (ID, Name, FName, Address, DOB, Age, Contact, RoomNo, Fee) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
+                    data = (id, name, fname, address, DOB, age, contact, roomn, fee)
+                    my_connection.execute(insert_query, data)
+                    connection.commit()
+
+                    # Update the occupancy in the Rooms table
+                    update_query = "UPDATE Rooms SET Occupancy = Occupancy + 1 WHERE RoomNo = %s"
+                    my_connection.execute(update_query, (roomn,))
+                    connection.commit()
+
+                    # Check if occupancy will become equal to capacity
+                    if occupancy + 1 == capacity:
+                        # Update status to "Deactive" in the Rooms table
+                        update_status_query = "UPDATE Rooms SET Status = 'Deactive' WHERE RoomNo = %s"
+                        my_connection.execute(update_status_query, (roomn,))
+                        connection.commit()
+
+                    messagebox.showinfo("Congrats", "Room Allocated")
+                else:
+                    messagebox.showerror("Error", "Room is already occupied. Please choose another room.")
+            else:
+                messagebox.showerror("Error", "Invalid room number.")
 
             # Close the cursor and connection
             my_connection.close()
             connection.close()
-        self.fetch_data()
 
+            # Fetch updated data
+            self.fetch_data()
+            self.clear_entry()
     def fetch_data(self):
         conn = mysql.connector.connect(
             host="localhost",
@@ -227,7 +289,7 @@ class Room:
         # Create a new window to display student information
         student_window = Toplevel(self.root)
         student_window.title("Insert Student")
-        student_window.geometry("800x500")
+        student_window.geometry("900x500")
 
         # Create a Treeview to display student information
         student_tree = ttk.Treeview(student_window, columns=(
@@ -295,6 +357,20 @@ class Room:
 
             # Close the student window
             window.destroy()
+
+    def clear_entry(self):
+        # Clear all entry fields
+        self.id_value.set("")
+        self.name.set("")
+        self.fname.set("")
+        self.addres.set("")
+        self.DOB.set("")
+        self.age.set("")
+        self.contact.set("")
+        self.roomn.set("")
+        self.fee.set("")
+
+
 if __name__ == "__main__":
     root=Tk()
     obj= Room(root)

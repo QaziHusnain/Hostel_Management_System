@@ -10,7 +10,7 @@ class Fee:
 
         self.root = root
         self.root.title("Room Management")
-        self.root.geometry("800x615+250+82")
+        self.root.geometry("1050x615+250+82")
         self.root.resizable(False, False)
         self.root["bg"] = "cadet blue"
 
@@ -31,14 +31,7 @@ class Fee:
         # Create a StringVar for the dropdown
         self.Status_value = StringVar()
 
-        # Label for "Active/Deactive"
-        label_name = Label(self.root, text="Active/De-active", font=("Time New Romen", 12, "bold"), bg="cadet blue",
-                           fg="white").place(x=20, y=170)
 
-        # Combobox (Dropdown) for "Active/Deactive"
-        status_combobox = ttk.Combobox(self.root, textvariable=self.Status_value, values=["", "Active", "Deactive"])
-        status_combobox.place(x=160, y=175)
-        status_combobox.set("")  # Set the default value
 
         self.Type_value = StringVar()
 
@@ -92,8 +85,8 @@ class Fee:
         )
         cursor = conn.cursor()
 
-        self.st_detail = ttk.Treeview(Tree_frame, height=15, columns=(
-            "RoomNo", "Status", "Type"),
+        self.st_detail = ttk.Treeview(Tree_frame, height=15,
+                                      columns=("RoomNo", "Status", "Type", "Occupancy", "Capacity"),
                                       xscrollcommand=scroll_x.set, yscrollcommand=scroll_y.set)
         self.st_detail.bind("<<TreeviewSelect>>", self.on_treeview_select)
 
@@ -103,24 +96,39 @@ class Fee:
         scroll_x.pack(side=BOTTOM, fill=X)
         scroll_y.pack(side=RIGHT, fill=Y)
 
+        # Update headings
         self.st_detail.heading("RoomNo", text="RoomNo")
         self.st_detail.heading("Status", text="Status")
         self.st_detail.heading("Type", text="Type")
+        self.st_detail.heading("Occupancy", text="Occupancy")
+        self.st_detail.heading("Capacity", text="Capacity")
 
         self.st_detail["show"] = "headings"
 
+        # Set the width and anchor for each column
         self.st_detail.column("RoomNo", anchor=tk.CENTER, width=120)
         self.st_detail.column("Status", anchor=tk.CENTER, width=120)
         self.st_detail.column("Type", anchor=tk.CENTER, width=120)
-
+        self.st_detail.column("Occupancy", anchor=tk.CENTER, width=120)
+        self.st_detail.column("Capacity", anchor=tk.CENTER, width=120)
 
         self.st_detail.pack(fill=tk.BOTH, expand=1)
         self.view_command()
 
     def add(self):
         No = self.No_value.get()
-        Status = self.Status_value.get()
+        Status = "Active"  # Set default status to Active
         Type = self.Type_value.get()
+        # Set capacity based on the selected room type
+        if Type == "Single Seater":
+            Capacity = 1
+        elif Type == "Double Seater":
+            Capacity = 2
+        elif Type == "Three Seater":
+            Capacity = 3
+        else:
+            messagebox.showerror("Error", "Invalid room type selected.")
+            return
 
 
         conn = mysql.connector.connect(
@@ -130,8 +138,8 @@ class Fee:
             database="hostel"
         )
         cursor = conn.cursor()
-        query = "INSERT INTO Rooms (RoomNo, Status, Type) VALUES (%s, %s, %s)"
-        values = (No, Status, Type)
+        query = "INSERT INTO Rooms (RoomNo, Status, Type, Capacity, Occupancy) VALUES (%s, %s, %s, %s, %s)"
+        values = (No, Status, Type, Capacity, 0)  # Initial occupancy is set to 0
         cursor.execute(query, values)
         messagebox.showinfo("Success", "Room Recorded successful")
 
@@ -148,7 +156,7 @@ class Fee:
             database="hostel"
         )
         cursor = conn.cursor()
-        query = "SELECT RoomNo, Status,Type FROM Rooms"
+        query = "SELECT RoomNo, Status, Type, Occupancy, Capacity FROM Rooms"
         cursor.execute(query)
 
         # Fetch all records
@@ -162,7 +170,7 @@ class Fee:
         for row in rows:
             self.st_detail.insert("", tk.END, values=row)
 
-            # Close the connection
+        # Close the connection
         conn.close()
 
     def search_command(self):
@@ -177,12 +185,11 @@ class Fee:
 
         # Get values from entry fields
         ID = self.No_value.get()
-        Name = self.Status_value.get()
         FName = self.Type_value.get()
 
         # Execute MySQL query for searching data
-        query = "SELECT * FROM Rooms WHERE RoomNo = %s OR Status = %s OR Type = %s"
-        values = (ID, Name, FName)
+        query = "SELECT * FROM Rooms WHERE RoomNo = %s OR Type = %s"
+        values = (ID, FName)
         cursor.execute(query, values)
 
         # Fetch all records
@@ -193,8 +200,8 @@ class Fee:
 
         # Insert new data into the treeview
         for row in rows:
-            self.st_detail.insert("", tk.END, values=row)
-
+            # The order of values should match the order of columns in the Treeview
+            self.st_detail.insert("", tk.END, values=(row[0], row[1], row[2], row[4], row[3]))
         # Close the connection
         conn.close()
 
@@ -236,7 +243,8 @@ class Fee:
         if not selected_item:
             messagebox.showinfo("Update", "Please select a record to update.")
             return
-            # Get the ID of the selected item
+
+        # Get the ID of the selected item
         selected_id = self.st_detail.item(selected_item, "values")[0]
 
         # Update the record in the database
@@ -249,11 +257,25 @@ class Fee:
         cursor = conn.cursor()
 
         # Execute MySQL query for updating data
-        query = "UPDATE Rooms SET Status = %s, Type = %s WHERE RoomNo = %s"
-        values = (self.Status_value.get(), self.Type_value.get(), self.No_value.get())
+        query = "UPDATE Rooms SET Status = %s, Type = %s, Capacity = %s WHERE RoomNo = %s"
+
+        # Dynamically set Capacity based on the selected Type
+        type_value = self.Type_value.get()
+        if type_value == "Single Seater":
+            capacity_value = 1
+        elif type_value == "Double Seater":
+            capacity_value = 2
+        elif type_value == "Three Seater":
+            capacity_value = 3
+        else:
+            messagebox.showerror("Error", "Invalid room type selected.")
+            return
+
+        values = (self.Status_value.get(), type_value, capacity_value, self.No_value.get())
 
         cursor.execute(query, values)
         messagebox.showinfo("Congrats", "Record Updated.")
+
         # Commit and close
         conn.commit()
         conn.close()
