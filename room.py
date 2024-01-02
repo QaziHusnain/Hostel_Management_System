@@ -358,6 +358,7 @@ class Room:
             # Close the student window
             window.destroy()
 
+
     def clear_entry(self):
         # Clear all entry fields
         self.id_value.set("")

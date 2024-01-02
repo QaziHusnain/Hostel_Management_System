@@ -6,51 +6,68 @@ import mysql.connector
 
 
 class Salary:
-    def __init__ (self,root):
+    def __init__(self, root):
 
-        self.root= root
+        self.root = root
         self.root.title("Manage Staff Salary")
-        self.root.geometry("1100x480+250+215")
-        self.root.resizable(False,False)
+        self.root.geometry("1400x480+250+215")
+        self.root.resizable(False, False)
 
-        #=======top label for Heading=======
-        toplabel=Label(self.root, text="Manage Staff Salary",font=("Time New Romen",14,"bold"), bg="black",fg="gold").pack(fill=X)
+        self.id_value = IntVar()
+        self.name_value = StringVar()
+        self.fname_value = StringVar()
+        self.contact_value = StringVar()
+        self.month_value = StringVar()
+        self.discount_value = StringVar()
+        self.fee_value = StringVar()
 
-        #=======labels and entries fields ========
-        id_value = IntVar()
+        # =======top label for Heading=======
+        toplabel = Label(self.root, text="Manage Staff Salary", font=("Time New Romen", 14, "bold"), bg="black",
+                         fg="gold").pack(fill=X)
+
+        # =======labels and entries fields ========
         id_label = Label(self.root, text="ID :", font=("Time New Romen", 12, "bold"), fg="black").place(x=20, y=60)
-        id_entry = Entry(self.root, width=15, textvariable=id_value).place(x=140, y=60)
-        name_value = StringVar()
+        id_entry = Entry(self.root, width=15, textvariable=self.id_value).place(x=140, y=60)
+
         name_label = Label(self.root, text="Name", font=("Time New Romen", 12, "bold"), fg="black").place(x=20, y=100)
-        name_entry = Entry(self.root, width=30, textvariable=name_value).place(x=140, y=100)
-        fname_value = StringVar()
+        name_entry = Entry(self.root, width=30, textvariable=self.name_value).place(x=140, y=100)
+
         fname_label = Label(self.root, text="Father Name", font=("Time New Romen", 12, "bold"), fg="black").place(x=20,
                                                                                                                   y=140)
-        fname_entry = Entry(self.root, width=30, textvariable=fname_value).place(x=140, y=140)
-        contact_value = StringVar()
+        fname_entry = Entry(self.root, width=30, textvariable=self.fname_value).place(x=140, y=140)
+
         contact_Name = Label(self.root, text="Contact No", font=("Time New Romen", 12, "bold"), fg="black").place(x=20,
                                                                                                                   y=180)
-        contact_entry = Entry(self.root, width=30, textvariable=contact_value).place(x=140, y=180)
-        month_value = StringVar()
+        contact_entry = Entry(self.root, width=30, textvariable=self.contact_value).place(x=140, y=180)
+
         month_label = Label(self.root, text="Month", font=("Time New Romen", 12, "bold"), fg="black").place(x=20, y=220)
-        month_entry = Entry(self.root, width=30, textvariable=month_value).place(x=140, y=220)
-        discount_value = StringVar()
+        month_entry = Entry(self.root, width=30, textvariable=self.month_value).place(x=140, y=220)
+
         discount_label = Label(self.root, text="Discount", font=("Time New Romen", 12, "bold"), fg="black").place(x=20,
                                                                                                                   y=260)
-        discount_entry = Entry(self.root, width=30, textvariable=discount_value).place(x=140, y=260)
-        fee_value = StringVar()
-        fee_label = Label(self.root, text="Fee Amount", font=("Time New Romen", 12, "bold"), fg="black").place(x=20,                                                                                                            y=300)
-        fee_entry = Entry(self.root, width=30, textvariable=fee_value).place(x=140, y=300)
+        discount_entry = Entry(self.root, width=30, textvariable=self.discount_value).place(x=140, y=260)
 
-        #========search, save, and clear buttons=============
-        search_btn =Button(self.root, text="Search",font=("Time New Romen", 12, "bold"),bg= "black", fg="gold" ).place(x=255,y=60)
-        
-        save_btn =Button(self.root, text="Save", command=self.add, font=("Time New Romen", 12, "bold"),bg= "black", fg="gold", width = 12 ).place(x=20,y=360)
+        fee_label = Label(self.root, text="Fee Amount", font=("Time New Romen", 12, "bold"), fg="black").place(x=20,
+                                                                                                               y=300)
+        fee_entry = Entry(self.root, width=30, textvariable=self.fee_value).place(x=140, y=300)
 
-        clear_btn =Button(self.root, text="Clear",font=("Time New Romen", 12, "bold"),bg= "black", fg="gold", width= 12 ).place(x=200,y=360)
-        
-        #========= frame for saparation =========
-        frame= Frame(self.root, width =4, height =435,bg= "cadet blue").place(x=400,y=30)
+        # ========search, save, and clear buttons=============
+        search_btn = Button(self.root, text="Search", font=("Time New Romen", 12, "bold"), bg="black", fg="gold").place(
+            x=255, y=60)
+
+        save_btn = Button(self.root, text="Save", command=self.add, font=("Time New Romen", 12, "bold"), bg="black",
+                          fg="gold", width=12).place(x=20, y=360)
+
+        clear_btn = Button(self.root, text="Clear", font=("Time New Romen", 12, "bold"), bg="black", fg="gold",
+                           width=12).place(x=200, y=360)
+
+        # Insert Staff Member button
+        insert_staff_btn = Button(self.root, text="Insert Staff", command=self.open_staff_window,
+                                  font=("Time New Romen", 12, "bold"), bg="black", fg="gold", width=12)
+        insert_staff_btn.place(x=20, y=410)
+
+        # ========= frame for saparation =========
+        frame = Frame(self.root, width=4, height=435, bg="cadet blue").place(x=400, y=30)
 
         conn = mysql.connector.connect(
             host="localhost",
@@ -58,10 +75,10 @@ class Salary:
             password="1234",
             database="hostel"
         )
-        cursor = conn.cursur()
+        cursor = conn.cursor()
 
         self.tree = ttk.Treeview(self.root, height=18,
-                                 columns=("ID", "Name", "FName", "Contact" "Month", "Discount", "Fee Amount"))
+                                 columns=("ID", "Name", "FName", "Contact","Month", "Discount", "Fee Amount"))
 
         self.tree.heading("ID", text="ID")
         self.tree.heading("Name", text="Name")
@@ -115,7 +132,64 @@ class Salary:
             connection.close()
 
 
+    def open_staff_window(self):
+        staff_window = Toplevel(self.root)
+        staff_window.title("Staff Members")
+        staff_window.geometry("1400x400+300+200")
+
+        staff_tree = ttk.Treeview(staff_window, columns=(
+            "ID", "Name", "Father Name", "Address", "DOB", "Age", "Contact"), show="headings")
+        # Bind the TreeviewSelect event to a function
+        staff_tree.bind("<<TreeviewSelect>>", lambda event: self.on_staff_select(event, staff_tree, staff_window))
+
+        staff_tree.heading("ID", text="ID")
+        staff_tree.heading("Name", text="Name")
+        staff_tree.heading("Father Name", text="Father Name")
+        staff_tree.heading("Address", text="Address")
+        staff_tree.heading("DOB", text="DOB")
+        staff_tree.heading("Age", text="Age")
+        staff_tree.heading("Contact", text="Contact")
+
+        staff_tree.pack(pady=20)
+
+
+
+        conn = mysql.connector.connect(
+            host="localhost",
+            user="root",
+            password="1234",
+            database="hostel"
+        )
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM Staff")
+        staff_data = cursor.fetchall()
+
+        for staff in staff_data:
+            staff_tree.insert("", tk.END, values=staff)
+
+    def on_staff_select(self, event, treeview, window):
+        selected_item = treeview.selection()
+        if selected_item:
+            staff_info = treeview.item(selected_item, "values")
+
+            # Print debug information
+            print("Selected Staff Info:", staff_info)
+            print("ID Value:", self.id_value.get())
+            print("Name Value:", self.name_value.get())
+            print("FName Value:", self.fname_value.get())
+            print("Contact Value:", self.contact_value.get())
+
+            # Populate the entry fields in the Manage Room window
+            self.id_value.set(staff_info[0])  # Assuming ID is at index 0
+            self.name_value.set(staff_info[1])  # Assuming Name is at index 1
+            self.fname_value.set(staff_info[2])  # Assuming Father Name is at index 2
+            self.contact_value.set(staff_info[6])
+
+            # Close the student window
+            window.destroy()
+
+
 if __name__ == "__main__":
-    root=Tk()
-    obj= Salary(root)
+    root = Tk()
+    obj = Salary(root)
     root.mainloop()
