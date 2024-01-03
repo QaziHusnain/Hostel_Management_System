@@ -3,6 +3,10 @@ from tkinter import ttk
 import tkinter as tk
 from tkinter import messagebox
 import mysql.connector
+from tkcalendar import DateEntry
+from datetime import datetime
+import datetime
+
 
 
 class Student:
@@ -10,7 +14,7 @@ class Student:
 
         self.root = root
         self.root.title("Student Management")
-        self.root.geometry("1230x615+250+82")
+        self.root.geometry("1430x715+250+82")
         self.root.resizable(False, False)
         self.root["bg"] = "cadet blue"
 
@@ -58,27 +62,37 @@ class Student:
                               fg="white").place(x=20, y=420)
         contact_entry = Entry(self.root, width=30, textvariable=self.Student_value).place(x=160, y=425)
 
+        self.admission_date_value = StringVar()
+        label_admission_date = Label(self.root, text="Admission Date", font=("Time New Romen", 12, "bold"),
+                                     bg="cadet blue", fg="white").place(x=20, y=470)
+
+        # Set a placeholder format initially
+        admission_date_entry = DateEntry(self.root, width=25, textvariable=self.admission_date_value,
+                                         date_pattern="dd/MM/yyyy", state='readonly')
+        admission_date_entry.place(x=160, y=475)
+
+
         # ===================creating buttons=====================
 
         add_button = Button(self.root, text="Add", bg="black", command=self.add, fg="gold", bd=2, width=12,
                             font=("time new romens", 14, "bold"))
-        add_button.place(x=20, y=470)
+        add_button.place(x=20, y=510)
 
         del_button = Button(self.root, text="Delete", command=self.delete_command, bg="black", fg="gold", bd=2, width=12,
                             font=("time new romens", 14, "bold"))
-        del_button.place(x=190, y=470)
+        del_button.place(x=190, y=510)
 
         update_button = Button(self.root, text="Update", bg="black", command=self.update_command, fg="gold", bd=2, width=12,
                                font=("time new romens", 14, "bold"))
-        update_button.place(x=20, y=520)
+        update_button.place(x=20, y=550)
 
         home_button = Button(self.root, text="Search", bg="black", fg="gold", bd=2, width=12,
                              font=("time new romens", 14, "bold"), command=self.search_command)
-        home_button.place(x=190, y=520)
+        home_button.place(x=190, y=550)
 
         Reset_button = Button(self.root, text="Reset", bg="black", fg="gold", bd=2, width=12,
                              font=("time new romens", 14, "bold"), command=self.reset_command)
-        Reset_button.place(x=100, y=570)
+        Reset_button.place(x=100, y=620)
 
         # =========== frame for separation ==========
         sep_frame = Frame(self.root, bd=5, width=4, height=500, bg="black")
@@ -99,7 +113,7 @@ class Student:
         cursor = conn.cursor()
 
         self.st_detail = ttk.Treeview(Tree_frame, height=15, columns=(
-            "StdID", "Name", "Father Name", "Contact", "Address", "Class", "Fee"),
+            "StdID", "Name", "Father Name", "Contact", "Address", "Class", "Fee","AdmissionDate"),
                                       xscrollcommand=scroll_x.set, yscrollcommand=scroll_y.set)
         # Add the binding for TreeviewSelect event
         self.st_detail.bind("<<TreeviewSelect>>", self.on_treeview_select)
@@ -119,6 +133,9 @@ class Student:
         self.st_detail.heading("Address", text="Address")
         self.st_detail.heading("Class", text="Class")
         self.st_detail.heading("Fee", text="Fee")
+        self.st_detail.heading("AdmissionDate", text="Admission Date")
+
+
 
         self.st_detail["show"] = "headings"
 
@@ -129,6 +146,8 @@ class Student:
         self.st_detail.column("Address", anchor=tk.CENTER, width=120)
         self.st_detail.column("Class", anchor=tk.CENTER, width=120)
         self.st_detail.column("Fee", anchor=tk.CENTER, width=120)
+        self.st_detail.column("AdmissionDate", anchor=tk.CENTER, width=120)
+
 
         self.st_detail.pack(fill=tk.BOTH, expand=1)
         self.view_command()
@@ -141,26 +160,33 @@ class Student:
         Address = self.Address_value.get()
         Class = self.Class_value.get()
         Student = self.Student_value.get()
-
-        conn = mysql.connector.connect(
-            host="localhost",
-            user="root",
-            password="1234",
-            database="hostel"
+        admission_date = self.admission_date_value.get()
+        formatted_admission_date = (
+            datetime.datetime.strptime(admission_date, "%d/%m/%Y").strftime("%Y-%m-%d")
+            if admission_date
+            else None
         )
-        cursor = conn.cursor()
-        query = "INSERT INTO Student (ID, Name, FName, Contact, Address, Class, Fee) VALUES (%s, %s, %s, %s, %s, %s, %s)"
-        values = (ID, Name, FName, Contact, Address, Class, Student)
-        cursor.execute(query, values)
-        messagebox.showinfo("Success", "Student Record successful")
 
-        # Commit and close
-        conn.commit()
-        conn.close()
+
+        # Use the with statement for database connection
+        with mysql.connector.connect(
+                host="localhost",
+                user="root",
+                password="1234",
+                database="hostel"
+        ) as conn:
+            with conn.cursor() as cursor:
+                query = "INSERT INTO Student (ID, Name, FName, Contact, Address, Class, Fee, AdmissionDate) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+                values = (ID, Name, FName, Contact, Address, Class, Student, formatted_admission_date)
+                try:
+                    cursor.execute(query, values)
+                    conn.commit()
+                    messagebox.showinfo("Success", "Student Record successful")
+                except mysql.connector.Error as err:
+                    messagebox.showerror("Error", f"Error: {err}")
 
         self.view_command()
         self.clear_entry_fields()
-
 
     def view_command(self):
         conn = mysql.connector.connect(
@@ -182,11 +208,10 @@ class Student:
 
         # Insert new data into the treeview
         for row in rows:
-            self.st_detail.insert("", tk.END, values=row)
-
-            # Close the connection
-        conn.close()
-        self.clear_entry_fields()
+            # Ensure that the AdmissionDate field is correctly formatted
+            row_with_formatted_date = list(row)
+            row_with_formatted_date[-1] = row[-1].strftime("%d/%m/%Y") if row[-1] else ""
+            self.st_detail.insert("", tk.END, values=row_with_formatted_date)
 
     def search_command(self):
         # Connect to MySQL
@@ -206,9 +231,13 @@ class Student:
         Address = self.Address_value.get()
         Class = self.Class_value.get()
         Student = self.Student_value.get()
+        admission_date = self.admission_date_value.get()
+
+        # Convert admission_date to 'YYYY-MM-DD' format
+        formatted_admission_date = datetime.datetime.strptime(admission_date, "%d/%m/%Y").strftime("%Y-%m-%d")
 
         # Check if any search criteria is provided
-        if any((ID, Name, FName, Contact, Address, Class, Student)):
+        if any((ID, Name, FName, Contact, Address, Class, Student, admission_date)):
             # Execute MySQL query for searching data
             query = "SELECT * FROM Student WHERE ID = %s OR Name = %s OR FName = %s OR Contact = %s OR Address = %s OR Class = %s OR Fee = %s"
             values = (ID, Name, FName, Contact, Address, Class, Student)
@@ -226,7 +255,11 @@ class Student:
 
         # Insert new data into the treeview
         for row in rows:
-            self.st_detail.insert("", tk.END, values=row)
+            # Format AdmissionDate if it's not None
+            formatted_admission_date = row[-1].strftime("%d/%m/%Y") if row[-1] else ""
+            # Include AdmissionDate in the values
+            values_with_admission_date = row[:-1] + (formatted_admission_date,)
+            self.st_detail.insert("", tk.END, values=values_with_admission_date)
 
         # Close the connection
         conn.close()
@@ -283,8 +316,15 @@ class Student:
         )
         cursor = conn.cursor()
 
+        # Format the admission date
+        formatted_admission_date = (
+            datetime.datetime.strptime(self.admission_date_value.get(), "%d/%m/%Y").strftime("%Y-%m-%d")
+            if self.admission_date_value.get()
+            else None
+        )
+
         # Prepare and print the values before executing the query
-        query = "UPDATE Student SET Name=%s, FName=%s, Contact=%s, Address=%s, Class=%s, Fee=%s WHERE ID=%s"
+        query = "UPDATE Student SET Name=%s, FName=%s, Contact=%s, Address=%s, Class=%s, Fee=%s, AdmissionDate=%s WHERE ID=%s"
         values = (
             self.name_value.get(),
             self.fname_value.get(),
@@ -292,6 +332,7 @@ class Student:
             self.Address_value.get(),
             self.Class_value.get(),
             self.Student_value.get(),
+            formatted_admission_date,  # Use the formatted admission date
             selected_id  # Use the ID of the selected item for the WHERE clause
         )
 
@@ -304,7 +345,6 @@ class Student:
         # Clear entry fields and refresh the treeview
         self.view_command()
         self.clear_entry_fields()
-
 
     def on_treeview_select(self, event):
         # Get the selected item from the Treeview
@@ -322,6 +362,7 @@ class Student:
             self.Address_value.set(selected_values[4])
             self.Class_value.set(selected_values[5])
             self.Student_value.set(selected_values[6])
+
 
     def clear_entry_fields(self):
         self.id_value.set("0")

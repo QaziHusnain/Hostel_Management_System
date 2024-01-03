@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import Tk
 from tkinter import messagebox
 from PIL import Image, ImageTk
+from StaffReport import MySQLTkinterApp
 from daily_report import Daily_Report
 from weekly_report import Weekly_Report
 
@@ -55,7 +56,10 @@ class Report:
     def Staff(self):
         messagebox.showinfo("Success", "Staff Report Generated")
 
-        import StaffReport
+        # Create an instance of StaffReport and run it
+        staff_report_root = Tk()
+        staff_report_instance = MySQLTkinterApp(staff_report_root)
+        staff_report_instance.run()
 
 
 

@@ -9,8 +9,6 @@ class MySQLTkinterApp:
         self.root.geometry("1100x480+250+215")
         self.root.resizable(False, False)
 
-
-
         # Connect to MySQL database
         self.connection = mysql.connector.connect(
             host="localhost",
@@ -19,6 +17,7 @@ class MySQLTkinterApp:
             database="hostel"
         )
         self.cursor = self.connection.cursor()
+
         toplabel = tk.Label(self.root, text="Total Staff Report", font=("Time New Romen", 14, "bold"), bg="black", width=400,
                             fg="gold").pack()
 
@@ -26,11 +25,19 @@ class MySQLTkinterApp:
         self.calculate_button = ttk.Button(root, text="Calculate Report", command=self.calculate_total)
         self.calculate_button.pack(pady=20)
 
-        # Label to display the total amount
-        self.total_label = ttk.Label(root,  text="Total Staff: 0")
+        # Label to display the total staff count
+        self.total_label = ttk.Label(root, text="Total Staff: 0")
         self.total_label.pack(pady=20)
 
-        self.std_label = ttk.Label(root, text="Total Salary: 0")
+        # Labels to display the total paid and unpaid salary
+        self.paid_label = ttk.Label(root, text="Total Paid Salary: 0")
+        self.paid_label.pack(pady=20)
+
+        self.unpaid_label = ttk.Label(root, text="Total Unpaid Salary: 0")
+        self.unpaid_label.pack(pady=20)
+
+        # Label to display the total calculated salary
+        self.std_label = ttk.Label(root, text="Total Calculated Salary: 0")
         self.std_label.pack(pady=20)
 
     def calculate_total(self):
@@ -64,31 +71,21 @@ class MySQLTkinterApp:
         # Update the label with the total amount
         self.std_label.config(text=f'Total Calculated Salary: {total_amount}')
 
-
-
     def run(self):
         # Run the Tkinter event loop
         self.root.mainloop()
 
-    def __del__(self):
-        # Close the database connection when the instance is deleted
+    def cleanup(self):
+        # Close the cursor and connection
         self.cursor.close()
         self.connection.close()
 
 if __name__ == "__main__":
     root = tk.Tk()
 
-    # Create labels for "Paid" and "Unpaid" totals
-    paid_label = ttk.Label(root, text="Total Paid Salary: 0")
-    paid_label.pack(pady=20)
-
-    unpaid_label = ttk.Label(root, text="Total Unpaid Salary: 0")
-    unpaid_label.pack(pady=20)
-
     # Create an instance of the application
     app = MySQLTkinterApp(root)
-    app.paid_label = paid_label
-    app.unpaid_label = unpaid_label
 
     # Run the application
     app.run()
+    app.cleanup()
