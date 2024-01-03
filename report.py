@@ -3,8 +3,7 @@ from tkinter import Tk
 from tkinter import messagebox
 from PIL import Image, ImageTk
 from StaffReport import MySQLTkinterApp
-from daily_report import Daily_Report
-from weekly_report import Weekly_Report
+
 
 
 

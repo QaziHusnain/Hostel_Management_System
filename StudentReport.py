@@ -55,8 +55,8 @@ class MySQLTkinterApp:
         # Run the Tkinter event loop
         self.root.mainloop()
 
-    def __del__(self):
-        # Close the database connection when the instance is deleted
+    def cleanup(self):
+        # Close the cursor and connection
         self.cursor.close()
         self.connection.close()
 
@@ -65,3 +65,4 @@ app = MySQLTkinterApp(tk.Tk())
 
 # Run the application
 app.run()
+app.cleanup()
