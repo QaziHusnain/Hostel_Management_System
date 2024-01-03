@@ -65,10 +65,9 @@ class Salary:
         clear_btn = Button(self.root, text="Clear", command=self.clear_fields, font=("Time New Romen", 12, "bold"), bg="black", fg="gold",
                            width=12).place(x=200, y=380)
 
-        delete_all_btn = Button(self.root, text="Delete All", command=self.delete_all,
-                                font=("Time New Romen", 12, "bold"),
-                                bg="black", fg="gold", width=12)
-        delete_all_btn.place(x=200, y=420)
+        delete_btn = Button(self.root, text="Delete", command=self.delete_record, font=("Time New Romen", 12, "bold"),
+                            bg="black", fg="gold", width=12)
+        delete_btn.place(x=200, y=420)
 
         # Insert Staff Member button
         insert_staff_btn = Button(self.root, text="Insert Staff", command=self.open_staff_window,
@@ -193,7 +192,7 @@ class Salary:
 
 
             # Populate the entry fields in the Manage Room window
-            self.id_value.set(staff_info[0])  # Assuming ID is at index 0
+
             self.name_value.set(staff_info[1])  # Assuming Name is at index 1
             self.fname_value.set(staff_info[2])  # Assuming Father Name is at index 2
             self.contact_value.set(staff_info[6])
@@ -212,9 +211,15 @@ class Salary:
         self.year_value.set("")
         self.payment_status_value.set("")
 
-    def delete_all(self):
-        result = messagebox.askquestion("Delete All Records", "Are you sure you want to delete all records?")
+    def delete_record(self):
+        selected_item = self.tree.selection()
+        if not selected_item:
+            messagebox.showwarning("Warning", "Please select a record to delete.")
+            return
+
+        result = messagebox.askquestion("Delete Record", "Are you sure you want to delete this record?")
         if result == "yes":
+            selected_record_id = self.tree.item(selected_item, "values")[0]  # Assuming ID is the first column
             connection = mysql.connector.connect(
                 host='localhost',
                 user='root',
@@ -224,11 +229,11 @@ class Salary:
             )
             my_connection = connection.cursor()
 
-            delete_query = "DELETE FROM Salary"
-            my_connection.execute(delete_query)
+            delete_query = "DELETE FROM Salary WHERE ID = %s"
+            my_connection.execute(delete_query, (selected_record_id,))
 
             connection.commit()
-            messagebox.showinfo("Success", "All records deleted successfully")
+            messagebox.showinfo("Success", "Record deleted successfully")
 
             # Close the cursor and connection
             my_connection.close()
@@ -236,7 +241,6 @@ class Salary:
 
             # Refresh the Treeview after deletion
             self.refresh_treeview()
-
     def refresh_treeview(self):
         # Clear the existing items in the Treeview
         for item in self.tree.get_children():

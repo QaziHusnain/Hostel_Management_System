@@ -34,23 +34,36 @@ class MySQLTkinterApp:
         self.std_label.pack(pady=20)
 
     def calculate_total(self):
-        # Execute SQL query to get the sum of the 'amount' field
+        # Execute SQL query to get the count of 'Name' field (total staff)
         self.cursor.execute("SELECT COUNT(Name) FROM Staff")
         result = self.cursor.fetchone()
-        total_amount = result[0]
+        total_staff = result[0]
 
-        # Update the label with the total amount
-        self.total_label.config(text=f'Total Staff: {total_amount}')
-        self.calculate_Student()
+        # Update the label with the total staff count
+        self.total_label.config(text=f'Total Staff: {total_staff}')
 
-    def calculate_Student(self):
+        # Calculate total salary for both "Paid" and "Unpaid"
+        self.calculate_salary("Paid", self.paid_label)
+        self.calculate_salary("Unpaid", self.unpaid_label)
+
+    def calculate_salary(self, payment_status, label):
+        # Execute SQL query to get the sum of 'SalaryAmount' for the specified payment_status
+        query = f"SELECT SUM(SalaryAmount) FROM Salary WHERE PaymentStatus = '{payment_status}'"
+        self.cursor.execute(query)
+        result = self.cursor.fetchone()
+        total_salary = result[0] if result[0] is not None else 0
+
+        # Update the label with the total salary for the specified payment_status
+        label.config(text=f'Total {payment_status} Salary: {total_salary}')
+
         # Execute SQL query to get the sum of the 'amount' field
-        self.cursor.execute("SELECT SUM(Salary) FROM Salary")
+        self.cursor.execute("SELECT SUM(SalaryAmount) FROM Salary")
         result = self.cursor.fetchone()
         total_amount = result[0]
 
         # Update the label with the total amount
         self.std_label.config(text=f'Total Calculated Salary: {total_amount}')
+
 
 
     def run(self):
@@ -62,8 +75,20 @@ class MySQLTkinterApp:
         self.cursor.close()
         self.connection.close()
 
-# Create an instance of the application
-app = MySQLTkinterApp(tk.Tk())
+if __name__ == "__main__":
+    root = tk.Tk()
 
-# Run the application
-app.run()
+    # Create labels for "Paid" and "Unpaid" totals
+    paid_label = ttk.Label(root, text="Total Paid Salary: 0")
+    paid_label.pack(pady=20)
+
+    unpaid_label = ttk.Label(root, text="Total Unpaid Salary: 0")
+    unpaid_label.pack(pady=20)
+
+    # Create an instance of the application
+    app = MySQLTkinterApp(root)
+    app.paid_label = paid_label
+    app.unpaid_label = unpaid_label
+
+    # Run the application
+    app.run()
